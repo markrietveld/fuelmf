@@ -184,4 +184,15 @@ public class Station implements Comparable {
         }
         return temp;
     }
+
+    /**
+     * Searches the name and location of this station for the given string (full text search)
+     * Returns true if the string was found
+     * @param search the string to search for
+     * @return true if the string was found in this station
+     */
+    public boolean relates(String search){
+        search = search.toLowerCase();
+        return (name.toLowerCase().contains(search) || location.toLowerCase().contains(search));
+    }
 }

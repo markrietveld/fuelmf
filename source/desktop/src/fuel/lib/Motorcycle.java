@@ -211,6 +211,17 @@ public class Motorcycle implements Comparable {
         return temp;
     }
 
+    /**
+     * Searches the brand and type of this motorcycle for the given string (full text search)
+     * Returns true if the string was found
+     * @param search the string to search for
+     * @return true if the string was found in this motorcycle
+     */
+    public boolean relates(String search){
+        search = search.toLowerCase();
+        return (brand.toLowerCase().contains(search) || type.toLowerCase().contains(search));
+    }
+
     public String toString() {
         return brand + " " + type;
     }
