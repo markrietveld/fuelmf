@@ -346,7 +346,7 @@ public class RecordPanel extends JPanel {
                 fmt.setGroupingUsed(false);
                 fmt.setMinimumFractionDigits(0);
                 fmt.setMaximumFractionDigits(2);
-                newDistance = Double.valueOf(fmt.format(newDistance));
+                newDistance = Double.valueOf(fmt.format(newDistance).replaceAll(",", "."));
                 record.setDistanceTraveled(newDistance);
                 distance.setText(newDistance + "");
                 distance.setBackground(Color.GREEN);
@@ -371,7 +371,7 @@ public class RecordPanel extends JPanel {
                 fmt.setGroupingUsed(false);
                 fmt.setMinimumFractionDigits(0);
                 fmt.setMaximumFractionDigits(2);
-                newDistance = Double.valueOf(fmt.format(newDistance));
+                newDistance = Double.valueOf(fmt.format(newDistance).replaceAll(",", "."));
                 record.setTotalDistance(newDistance);
                 totalDistance.setText(newDistance + "");
                 totalDistance.setBackground(Color.GREEN);

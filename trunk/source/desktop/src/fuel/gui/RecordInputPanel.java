@@ -20,6 +20,7 @@ package fuel.gui;
 
 import fuel.lib.CSVhelper;
 import fuel.lib.Database;
+import fuel.lib.JLabel;
 import fuel.lib.JTextField;
 import fuel.lib.Motorcycle;
 import fuel.lib.TankRecord;
@@ -28,24 +29,25 @@ import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.DefaultListModel;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
-import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -71,6 +73,7 @@ public class RecordInputPanel extends JPanel {
     private View boss;
     private Database database;
     private Controller controller;
+    private JTextField searchField;
 
     public RecordInputPanel(View boss, Database database) throws SQLException {
         this.boss = boss;
@@ -99,10 +102,52 @@ public class RecordInputPanel extends JPanel {
 
         //left.add(topLeftPanel, BorderLayout.NORTH);
         left.add(menuBar, BorderLayout.NORTH);
+        searchField = new JTextField("", 10);
+        java.net.URL imgURL = getClass().getResource("/images/question.png");
+        JLabel description;
+        String toolTip = "Met dit invoerveld kunt u zoeken naar tankbeurten.\n" +
+                "Het programma zoekt in de datum, het commentaar, het type brandstof, de motor en het tankstion.\n" +
+                "U kunt meerdere zoekwoorden invullen, gescheiden door een spatie.\n" +
+                "Het programma geeft dan alleen resultaten waar alle zoekwoorden in voorkomen.\n" +
+                "De zoekwoorden zijn niet hoofdlettergevoelig";
+        if (imgURL != null) {
+            ImageIcon image = new ImageIcon(imgURL, "Uitleg");
+            description = new JLabel(image);
+        } else {
+            description = new JLabel("?");
+        }
+        description.setToolTipText(toolTip);
+        searchField.addKeyListener(new KeyListener() {
+
+            public void keyTyped(KeyEvent e) {
+                //do nothing
+            }
+
+            public void keyPressed(KeyEvent e) {
+                //do nothing
+            }
+
+            public void keyReleased(KeyEvent e) {
+                try {
+                    refreshTankRecords();
+                } catch (SQLException ex) {
+                    Logger.getLogger(RecordInputPanel.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        });
+        JPanel searchPanel = new JPanel(new BorderLayout());
+        JPanel searchLabel = new JPanel();
+        JLabel preSearch = new JLabel("Zoeken:");
+        preSearch.setToolTipText(toolTip);
+        searchLabel.add(preSearch);
+        searchLabel.add(searchField);
+        searchLabel.add(description);
+        searchPanel.add(searchLabel, BorderLayout.NORTH);
         JScrollPane scroll = new JScrollPane(recordsJList);
         scroll.getVerticalScrollBar().setUnitIncrement(10);
         scroll.getHorizontalScrollBar().setUnitIncrement(10);
-        left.add(scroll);
+        searchPanel.add(scroll, BorderLayout.CENTER);
+        left.add(searchPanel);
 
         JMenuItem exportRecordsButton = new JMenuItem("Export tankbeurten");
         exportRecordsButton.setActionCommand("EXPORTRECORDS");
@@ -113,7 +158,7 @@ public class RecordInputPanel extends JPanel {
         calcTotalItem.setActionCommand("CALCTOTAL");
         calcTotalItem.addActionListener(controller);
         menu.add(calcTotalItem);
-        
+
         JMenuItem clearItem = new JMenuItem("Verwijder alle tankbeurten");
         clearItem.setActionCommand("DELETEALLRECORDS");
         clearItem.addActionListener(controller);
@@ -134,14 +179,27 @@ public class RecordInputPanel extends JPanel {
         recordPanelContainer.revalidate();
         recordPanelContainer.repaint();
         tankRecordList.clear();
-        TreeSet records = database.getRecords();
-        Iterator it = records.iterator();
-        while (it.hasNext()) {
-            tankRecordList.addElement(it.next());
+        for (TankRecord record : database.getRecords()) {
+            String searchString = searchField.getText().toLowerCase();
+            boolean valid = true;
+            String[] searches = searchString.split(" ");
+            for (String search : searches) {
+                if (!((search.length() == 0) ||
+                        record.getMotorcycle().relates(search) ||
+                        record.getStation().relates(search) ||
+                        record.getComment().toLowerCase().contains(search) ||
+                        record.toString().toLowerCase().contains(search) ||
+                        record.getTypeOfGas().toLowerCase().contains(search))) {
+                    valid = false;
+                }
+            }
+            if (valid) {
+                tankRecordList.addElement(record);
+            }
         }
         recordsJList.setModel(tankRecordList);
         recordsJList.setModel(tankRecordList);
-        if (recordsJList != null && tankRecordList.size() > 0){
+        if (recordsJList != null && tankRecordList.size() > 0) {
             recordsJList.setSelectedIndex(0);
         }
     }
@@ -232,7 +290,8 @@ public class RecordInputPanel extends JPanel {
                         }
 
                     }
-                } catch (SQLException ex) {}
+                } catch (SQLException ex) {
+                }
 
             } else if (e.getActionCommand().equals("EXPORTRECORDS")) {
                 try {
@@ -278,8 +337,8 @@ public class RecordInputPanel extends JPanel {
                     Logger.getLogger(RecordInputPanel.class.getName()).log(Level.SEVERE, null, ex);
                 }
             } else if (e.getActionCommand().equals("DELETEALLRECORDS")) {
-                if (JOptionPane.showConfirmDialog(boss, "Weet u zeker dat u alle tankbeurten van al uw voertuigen wilt verwijderen?", "Bevestiging", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION){
-                    if (JOptionPane.showConfirmDialog(boss, "Weet u heel zeker dat u alle tankbeurten van al uw voertuigen wilt verwijderen?\n Deze actie is niet omkeerbaar!", "Bevestiging", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION){
+                if (JOptionPane.showConfirmDialog(boss, "Weet u zeker dat u alle tankbeurten van al uw voertuigen wilt verwijderen?", "Bevestiging", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+                    if (JOptionPane.showConfirmDialog(boss, "Weet u heel zeker dat u alle tankbeurten van al uw voertuigen wilt verwijderen?\n Deze actie is niet omkeerbaar!", "Bevestiging", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
                         try {
                             for (TankRecord record : database.getRecords()) {
                                 record.delete(database);
@@ -363,7 +422,7 @@ public class RecordInputPanel extends JPanel {
                 }
             });
             everything.setSelected(true);
-            first.add(everything,"wrap");
+            first.add(everything, "wrap");
 
             first.add(new JLabel("Alleen van voertuig: "));
             motorSelect = new JComboBox(database.getMotorcycles().toArray());
