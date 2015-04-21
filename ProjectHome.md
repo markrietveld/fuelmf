@@ -1,0 +1,1 @@
+The interface is currently Dutch only. Originally created for motorcycles on www.motor-forum.nl.
